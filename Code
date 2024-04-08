@@ -1,0 +1,558 @@
+################################################
+# Load Packages and Set Working Directory #
+################################################
+library(VennDiagram)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(cowplot)
+library(tidyr)
+library(hrbrthemes)
+library(viridis)
+library(viridisLite)
+library(plotly)
+library(heatmaply)
+library(pheatmap)
+library(dendextend)
+library(funrar)
+library(vegan)
+library(wesanderson)
+library(phyloseq)
+library(ggpubr)
+library(tidyverse)
+
+# install.packages("BiocManager")
+# BiocManager::install("phyloseq")
+# BiocManager::version() 
+# version = '3.16'
+## STACKED BAR GRAPH ##
+
+# Set WD
+
+# Mac OS
+setwd("/Users/galarza/Documents/NMSU/Chapter_3_(Bioreactor_+_Turf Scrubber)/Data/Analysis/OTU_Dist")
+
+# Windows
+setwd("C:/Users/jorge/iCloudDrive/Documents/NMSU/Chapter_3_(Bioreactor_+_Turf Scrubber)/Data/Analysis/OTU_Dist")
+
+################################################
+# Data Wrangling #
+################################################
+# Import 16s data set
+delimeted_all <- read.csv("All_OTU.csv", header = TRUE)
+delimeted_phylum <- read.csv("Phylum_OTU.csv", header = TRUE)
+delimeted_class <- read.csv("Class_OTU.csv", header = TRUE)
+delimeted_order <- read.csv("Order_OTU.csv", header = TRUE)
+delimeted_family <- read.csv("Family_OTU.csv", header = TRUE)
+delimeted_genus <- read.csv("Genus_OTU.csv", header = TRUE)
+delimeted_species <- read.csv("Species_OTU.csv", header = TRUE)
+
+# Turn the horizontal data into long vertical data
+phylum_melt <- melt(delimeted_phylum, id = c("Phylum"))
+class_melt <- melt(delimeted_class, id = c("Class"))
+order_melt <- melt(delimeted_order, id = c("Order"))
+family_melt <- melt(delimeted_family, id = c("Family"))
+genus_melt <- melt(delimeted_genus, id = c("Genus"))
+species_melt <- melt(delimeted_species, id = c("Species"))
+
+# Keep phylum organization in order
+phylum_melt$Phylum <- factor(phylum_melt$Phylum, levels = unique(phylum_melt$Phylum))
+class_melt$Class <- factor(class_melt$Class, levels = unique(class_melt$Class))
+order_melt$Order <- factor(order_melt$Order, levels = unique(order_melt$Order))
+family_melt$Family <- factor(family_melt$Family, levels = unique(family_melt$Family))
+genus_melt$Genus <- factor(genus_melt$Genus, levels = unique(genus_melt$Genus))
+species_melt$Species <- factor(species_melt$Species, levels = unique(species_melt$Species))
+################################################
+# Relative Abundances #
+################################################
+
+# SWITCH 'colour = "black" to colour = NA' TO REMOVE BLACK LINES
+
+# Phylum
+
+top_phylum <- phylum_melt %>% 
+  top_n(1000, value) %>% 
+  pull(Phylum)
+
+ggplot(phylum_melt, aes(x = variable, fill = Phylum, y = value)) +
+  geom_bar(position = "fill", stat = "identity", color = "black") + 
+  theme_classic2() +
+  theme(axis.text.x = element_text(angle = 90, size = 18, colour = "black", vjust = 0.5, hjust = 1, face= "bold"), 
+        axis.title.y = element_text(size = 22, face = "bold"), legend.title = element_text(size = 22, face = "bold"), 
+        legend.text = element_text(size = 18, colour = "black"), 
+        axis.text.y = element_text(colour = "black", size = 18, face = "bold")) + 
+  scale_y_continuous(expand = c(0,0.02)) +
+  labs(x = "", y = "Relative Abundance (%)") +
+  scale_fill_discrete(breaks = top_phylum)
+
+# Class
+
+top_class <- class_melt %>% 
+  top_n(350, value) %>% 
+  pull(Class)
+
+ggplot(class_melt, aes(x = variable, fill = Class, y = value)) + 
+  geom_bar(position = "fill", stat = "identity", colour = "black") + 
+  theme_classic2() +
+  theme(axis.text.x = element_text(angle = 90, size = 18, colour = "black", vjust = 0.5, hjust = 1, face= "bold"), 
+        axis.title.y = element_text(size = 22, face = "bold"), legend.title = element_text(size = 22, face = "bold"), 
+        legend.text = element_text(size = 18, colour = "black"), 
+        axis.text.y = element_text(colour = "black", size = 18, face = "bold")) + 
+  scale_y_continuous(expand = c(0,0.02)) + 
+  labs(x = "", y = "Relative Abundance (%)") +
+  scale_fill_discrete(breaks = top_class)
+
+# Order
+ggplot(order_melt, aes(x = variable, fill = Order, y = value)) + 
+  geom_bar(position = "fill", stat = "identity", colour = "black") + 
+  theme_classic2() +
+  theme(axis.text.x = element_text(angle = 90, size = 12, colour = "black", vjust = 0.5, hjust = 1, face= "bold"), 
+        axis.title.y = element_text(size = 14, face = "bold"), legend.title = element_text(size = 14, face = "bold"), 
+        legend.text = element_text(size = 12, colour = "black"), 
+        axis.text.y = element_text(colour = "black", size = 12, face = "bold")) +
+  scale_y_continuous(expand = c(0,0)) + 
+  labs(x = "", y = "Relative Abundance", fill = "Order")
+
+# Family
+ggplot(family_melt, aes(x = variable, fill = Family, y = value)) + 
+  geom_bar(position = "fill", stat = "identity", colour = "black") + 
+  theme_classic2() +
+  theme(axis.text.x = element_text(angle = 90, size = 12, colour = "black", vjust = 0.5, hjust = 1, face= "bold"), 
+        axis.title.y = element_text(size = 14, face = "bold"), legend.title = element_text(size = 14, face = "bold"), 
+        legend.text = element_text(size = 12, face = "italic", colour = "black"), 
+        axis.text.y = element_text(colour = "black", size = 12, face = "bold")) + 
+  scale_y_continuous(expand = c(0,0)) + 
+  labs(x = "", y = "Relative Abundance", fill = "Family")
+
+# Genus
+ggplot(genus_melt, aes(x = variable, fill = Genus, y = value)) + 
+  geom_bar(position = "fill", stat = "identity", colour = "black")  + 
+  theme_classic2() +
+  theme(axis.text.x = element_text(angle = 90, size = 12, colour = "black", vjust = 0.5, hjust = 1, face= "bold"), 
+        axis.title.y = element_text(size = 14, face = "bold"), legend.title = element_text(size = 14, face = "bold"), 
+        legend.text = element_text(size = 12, face = "italic", colour = "black"), 
+        axis.text.y = element_text(colour = "black", size = 12, face = "bold")) + 
+  scale_y_continuous(expand = c(0,0)) + 
+  labs(x = "", y = "Relative Abundance", fill = "Genus")
+
+# Species
+ggplot(species_melt, aes(x = variable, fill = Species, y = value)) + 
+  geom_bar(position = "fill", stat = "identity", colour = "black") + 
+  theme_classic2() +
+  theme(axis.text.x = element_text(angle = 90, size = 12, colour = "black", vjust = 0.5, hjust = 1, face= "bold"), 
+        axis.title.y = element_text(size = 14, face = "bold"), legend.title = element_text(size = 14, face = "bold"), 
+        legend.text = element_text(size = 12, face = "italic", colour = "black"), 
+        axis.text.y = element_text(colour = "black", size = 12, face = "bold")) + 
+  scale_y_continuous(expand = c(0,0)) + 
+  labs(x = "", y = "Relative Abundance", fill = "Species")
+
+################################################
+# Venn Diagram #
+################################################
+# Import 16s data set
+VennD <- read.csv("Species_OTU.csv", header = TRUE)
+
+# Transform to binary
+VennD[,-c(1)] <- apply(VennD[ , -c(1)], 1:2, function(x) ifelse(x>0, 1, 0))
+
+# Subset the data by treatment
+# While using OTU.csv file
+ATS <- VennD[ , c("ATS1", "ATS2", "ATS3", "ATS4")]
+BR <- VennD[ , c("BR1", "BR2", "BR3", "BR4")]
+AB <- VennD[ , c("AB1", "AB2", "AB3", "AB4")]
+Control <- VennD[ , c("C1", "C2", "C3", "C4")]
+
+# Remove taxa that sum up to less than 2 across all sample reps
+ATS <- ATS[which(rowSums(ATS)>0),]
+BR <- BR[which(rowSums(BR)>0),]
+AB <- AB[which(rowSums(AB)>0),]
+Control <- Control[which(rowSums(Control)>0),]
+
+venndata <- list(ATS = as.character(rownames(ATS)),
+                 Control = as.character(rownames(Control)),
+                 BR = as.character(rownames(BR)),
+                 AB = as.character(rownames(AB)))
+
+venn.diagram(
+  x = venndata,
+  filename = "Venn_diagram.png",
+  imagetype = "png",
+  main = "",
+  main.cex = 2,
+  col = "black",
+  lwd = 4,
+  fill = c("dodgerblue",
+           "firebrick",
+           "forestgreen",
+           "gold"),
+  alpha = 0.50,
+  label.col = c("black"),
+  cex = 2,
+  fontfamily = "serif",
+  fontface = "bold",
+  cat.cex = 1,
+  cat.fontfamily = "serif"
+)
+
+## Count of VENN
+venn_count <- read.csv("Venn_count.csv", header = TRUE)
+ggplot(venn_count, aes(x = Treatment, y = Count, fill = Treatment)) +
+  theme_classic2() +
+  geom_col(color = "black") +
+  geom_text(aes(y = Count, label = Count), vjust = 1.5, size = 12) +
+  labs(x = "", y = "ASV Counts") +
+  theme(axis.text.x = element_text(size = 26, face = "bold", color = "black"),
+        axis.text.y = element_text(size = 26, face = "bold", color = "black"),
+        axis.title.y = element_text(size = 34, face = "bold", color = "black"),
+        legend.position = "none") +
+  scale_x_discrete(limits = c("ATS","BR","AB", "Control")) +
+  scale_fill_manual(values = alpha(c("gold", "dodgerblue", "forestgreen", "firebrick"), 0.5))
+
+################################################
+# Heat maps #
+################################################
+
+# Making the first column of the none duplicated data set the row names
+genus_heat <- read.csv("Genus_OTU_Heatmap.csv", header = TRUE)
+genus_heat$Genus <- factor(genus_heat$Genus, levels = unique(genus_heat$Genus))
+genus_heat_rownames <- genus_heat[,-1]
+rownames(genus_heat_rownames) <- genus_heat[,1]
+
+data <- as.matrix(genus_heat_rownames)
+data_subset <- as.matrix(data[rowSums(data)>500,])
+
+# Get Z score
+cal_z_score <- function(x){
+  (x - mean(x)) / sd(x)
+}
+
+# Italics function
+newnames <- lapply(
+  rownames(data_subset),
+  function(x) bquote(italic(.(x))))
+
+set.seed(1992)
+data_subset_norm <- t(apply(data_subset, 1, cal_z_score))
+
+## Normalized Heat map
+pheatmap(data_subset_norm,
+         main = "",
+         cluster_cols= TRUE,
+         cluster_rows = TRUE,
+         display_numbers = F,
+         number_format = "%.0f",
+         number_color = "black",
+         fontsize = 11,
+         gaps_row = NULL,
+         gaps_col = NULL,
+         legend_breaks = c(-1, 1, 3),
+         legend_labels = c("Low", "Medium", "High"), 
+         labels_row = as.expression(newnames))
+
+## Non-normalized Top 49 Heat map
+oh_well_subset <- as.matrix(data[rowSums(data)>500,])
+pheatmap(oh_well_subset,
+         main = "",
+         cluster_cols= TRUE,
+         cluster_rows = TRUE,
+         display_numbers = T,
+         number_format = "%.0f",
+         number_color = "black",
+         fontsize = 12,
+         gaps_row = NULL,
+         gaps_col = NULL,
+         legend_breaks = c(2000, 20000, 34000),
+         legend_labels = c("Low", "Medium", "High"), 
+         labels_row = as.expression(newnames))
+
+## Non-normalized Heat map
+happy_subset <- as.matrix(data[rowSums(data)>3000,])
+pheatmap(happy_subset,
+         main = "",
+         cluster_cols= TRUE,
+         cluster_rows = TRUE,
+         display_numbers = T,
+         number_format = "%.0f",
+         number_color = "black",
+         fontsize = 12,
+         gaps_row = NULL,
+         gaps_col = NULL,
+         legend_breaks = c(2000, 20000, 34000),
+         legend_labels = c("Low", "Medium", "High"), 
+         labels_row = as.expression(newnames))
+
+# Out of these genus, the ones in red the most abundant ones from y axis,
+# not the x axis for relative abundance.
+
+################################################
+# Primary Alpha Diversity #
+################################################
+
+# Genus OTU mat (Using heatmap CSV since duplicates are already merged)
+otumat1 <- read.csv("Genus_OTU_heatmap.csv", header = TRUE)
+otumat1$Genus <- factor(otumat1$Genus, levels = unique(otumat1$Genus))
+otumat <- otumat1[,-1]
+rownames(otumat) <- otumat1[,1]
+head(otumat)[,1:15]
+
+# Phylum and Genus taxmat
+taxmat <- read.csv("Taxmat.csv", header = TRUE)
+head(taxmat)
+
+# Create metadata
+metadata <- read.csv("Metadata.csv", header = TRUE)
+row.names(metadata) <- c("ATS1", "ATS2", "ATS3", "ATS4",
+                         "BR1", "BR2", "BR3", "BR4",
+                         "AB1", "AB2", "AB3", "AB4",
+                         "C1", "C2", "C3", "C4")
+
+# For this script to work, the tax_table and the otu_table row names must be identical and in the same order. 
+# So I use the command below just to be sure that the Genera in the tax_table are exactly the same as the row 
+# names of the otu_table.
+setdiff(rownames(otumat),taxmat$Genus)
+
+# Since the result is 0, I know there???s no difference, then I can use the data in the 
+# Genus column of taxmat as row names. Also, make sure the taxmat is a matrix.
+rownames(taxmat) <- taxmat$Genus
+taxmat =  as.matrix(taxmat)
+
+# Now create the phyloseq object by combining the three files imported previously.
+OTU = otu_table(otumat, taxa_are_rows = TRUE)
+TAX = tax_table(taxmat)
+sampledata = sample_data(metadata)
+physeq1 = phyloseq(OTU, TAX, sampledata)
+physeq1
+
+# Arranging the metadata factors so that the groups will always be listed in the given order:
+sample_data(physeq1)$Group <- factor((sample_data(physeq1)$Group), 
+                                     levels=c("ATS","BR","AB","Control"))
+
+# Phyloseq has the function ???Estimate Richness??? which returns the results of some alpha diversity 
+# estimates for each metagenome:
+richness <- estimate_richness(physeq1)
+richness
+
+# Import 16s data set
+zOTU <- read.csv("All_OTU.csv", header = TRUE)
+additional_richness <- read.csv("Alpha_additional_analysis.csv", header = TRUE)
+
+library(FSA) # Load package for Dunn test
+shapiro.test(additional_richness$Chao1)
+kruskal.test(Chao1 ~ Treatment, data = additional_richness)
+dunnTest(Chao1 ~ Treatment, data=additional_richness, method="none")
+
+shapiro.test(additional_richness$ACE)
+kruskal.test(ACE ~ Treatment, data = additional_richness)
+dunnTest(ACE ~ Treatment, data=additional_richness, method="none")
+
+shapiro.test(additional_richness$Shannon)
+kruskal.test(Shannon ~ Treatment, data = additional_richness)
+dunnTest(Shannon ~ Treatment, data=additional_richness, method="none")
+
+shapiro.test(additional_richness$Simpson)
+kruskal.test(Simpson ~ Treatment, data = additional_richness)
+dunnTest(Simpson ~ Treatment, data=additional_richness, method="none")
+
+################################################
+# Alpha Diversity (Chao1, ACE, Shannon, Simpson)
+################################################
+
+chao1_box <- ggplot(additional_richness, aes(x = Treatment, y = Chao1, fill = Treatment)) +
+  geom_boxplot(alpha = 0.5) +
+  geom_point(size = 1) +
+  theme_classic2() +
+  labs( x = "") +
+  theme(axis.text.y = element_text(size = 16, color = "black", face="bold"), 
+        axis.text.x = element_text(size = 18, color = "black", face="bold"),
+        axis.title.y = element_text(size = 22, color = "black", face="bold")) +
+  scale_x_discrete(limits = c("ATS","BR","AB", "Control")) +
+  scale_fill_manual(values = alpha(c("gold", "dodgerblue", "forestgreen", "firebrick"), 0.5)) +
+  annotate("text", x = 4, y = 92, size = 8, label = "**",
+           fontface = "bold")
+
+chao1_box
+
+ace_box <- ggplot(additional_richness, aes(x = Treatment, y = ACE, fill = Treatment)) +
+  geom_boxplot(alpha = 0.5) +
+  geom_point(size = 1) +
+  theme_classic2() +
+  labs(x = "") +
+  theme(axis.text.y = element_text(size = 16, color = "black", face="bold"),
+        axis.text.x = element_text(size = 18, color = "black", face="bold"),
+        axis.title.y = element_text(size = 22, color = "black", face="bold")) +
+  scale_x_discrete(limits = c("ATS","BR","AB", "Control")) +
+  scale_fill_manual(values = alpha(c("gold", "dodgerblue", "forestgreen", "firebrick"), 0.5)) +
+  annotate("text", x = 4, y = 92, size = 8, label = "**",
+           fontface = "bold")
+
+ace_box
+
+scaleFUN <- function(x) sprintf("%.1f", x)
+
+shannon_box <- ggplot(additional_richness, aes(x = Treatment, y = Shannon, fill = Treatment)) +
+  geom_boxplot(alpha = 0.5) +
+  geom_point(size = 1) +
+  theme_classic2() +
+  labs(x = "") +
+  theme(axis.text.y = element_text(size = 16, color = "black", face="bold"), 
+        axis.text.x = element_text(size = 18, color = "black", face="bold",
+                                   angle = 45, vjust = 1, hjust=1),
+        axis.title.y = element_text(size = 22, color = "black", face="bold"),
+        axis.title.x = element_text(size = 22, color = "black", face="bold")) +
+  scale_x_discrete(limits = c("ATS","BR","AB", "Control")) +
+  annotate("text", x = 4, y = 1.98, size = 8, label = "**",
+           fontface = "bold") +
+  scale_fill_manual(values = alpha(c("gold", "dodgerblue", "forestgreen", "firebrick"), 0.5)) +
+  scale_y_continuous(labels=scaleFUN)
+
+shannon_box
+
+simpson_box <- ggplot(additional_richness, aes(x = Treatment, y = Simpson, fill = Treatment)) +
+  geom_boxplot(alpha = 0.5) +
+  theme_classic2() +
+  geom_point(size = 1) +
+  ylim(0.5,0.90) +
+  labs(x = "") +
+  theme(axis.text.y = element_text(size = 16, color = "black", face="bold"),
+        axis.text.x = element_text(size = 18, color = "black", face="bold", 
+                                   angle = 45, vjust = 1, hjust=1),
+        axis.title.y = element_text(size = 22, color = "black", face="bold"),
+        axis.title.x = element_text(size = 22, color = "black", face="bold")) +
+  scale_x_discrete(limits = c("ATS","BR","AB", "Control"))+
+  scale_fill_manual(values = alpha(c("gold", "dodgerblue", "forestgreen", "firebrick"), 0.5)) +
+  annotate("text", x = 4, y = 0.69, size = 8, label = "**",
+           fontface = "bold")
+
+simpson_box
+  
+library(ggpubr)
+ggarrange(chao1_box + rremove("x.text"), 
+          ace_box + rremove("x.text"),
+          shannon_box, 
+          simpson_box,
+          labels = c("(a)", "(b)", "(c)", "(d)"),
+          hjust= 0.05,
+          vjust = 1.4,
+          ncol = 2, 
+          nrow = 2,
+          heights = c(1, 1.4),
+          widths = c(1, 1),
+          font.label = list(size = 22, 
+                            face = "bold", 
+                            color ="black"),
+          align = "v",
+          common.legend = TRUE,
+          legend = FALSE)
+
+################################################
+# Beta Diversity (NMDS & PERMANOVA/ ADONIS2) #
+################################################
+# NMDS - Bray Curtis Ordination (distance measurement)
+# Conduct Shapiro tests for all to confirm distribution
+# Conduct ANOVA tests for all
+# Conduct TukeyHSD for diversity measurements with sigdif from aov()
+
+dataNMDS <- read.csv("NMDS.csv", header = TRUE)
+# , row.names = 1
+
+library(vegan)
+data_1 <- dataNMDS[,3:766]
+data_2 <- dataNMDS[,1:2]
+
+set.seed(3)
+NMDS <- metaMDS(data_1, distance = "bray", k = 2)
+
+# # Extract the axes scores
+# datascores <- as.data.frame(scores(NMDS, display="sites"))  #extract the site scores
+# 
+# # Add/calculate spider diagram
+# scores <- cbind(as.data.frame(datascores), Group = data_2$Group)
+# centroids <- aggregate(cbind(NMDS1, NMDS2) ~ Group, data = scores, FUN = mean)
+# seg <- merge(scores, setNames(centroids, c('Group','oNMDS1','oNMDS2')),
+#              by = 'Group', sort = FALSE)
+# 
+# # Plot
+# ggplot(scores, aes(x = NMDS1, y = NMDS2, colour = Group)) +
+#   geom_point(data = centroids, size = 2) +
+#   geom_point() +                                              
+#   coord_fixed() +                                              
+#   theme_bw() 
+
+# Bootstrapping and testing for differences between the groups by using ADONIS
+# ADONIS: Package inside vegan package
+# Permutational Multivariate Analysis of Variance Using Distance Matrices
+
+fit <- adonis2(data_1 ~ Group, data=data_2, permutations=999, method="bray")
+fit # PERMANOVA: 0.001
+
+#Check assumption of homogeneity of multivariate dispersion
+distances_data <- vegdist(data_1)
+anova(betadisper(distances_data, data_2$Group))
+
+data <- read.csv("NMDS.csv", header = TRUE, row.names = 1)
+
+# Compute Bray-Curtis dissimilarity matrix
+bray_curtis_matrix <- vegdist(data[-1], method = "bray", na.rm = TRUE)
+bray_curtis_matrix
+
+# Perform NMDS
+nmds <- metaMDS(bray_curtis_matrix)
+nmds # Stress: 0.1060069
+scores(nmds) # Get coordinates from NMDS
+
+NMDS_coord <- read.csv("NMDS_coord.csv", header = TRUE)
+NMDS_coord <- NMDS_coord[-1]
+ggplot(NMDS_coord, aes(x = MDS1, y = MDS2, color = Group)) +
+  geom_point(size = 5, alpha = 0.3) +
+  coord_equal() +
+  theme_classic2() +
+  labs(x = "NMDS1", y = "NMDS2") +
+  theme(axis.text.x = element_blank(),  # remove x-axis text
+        axis.text.y = element_blank(), # remove y-axis text
+        axis.ticks = element_blank(),  # remove axis ticks
+        axis.title.x = element_text(size=22, face = "bold"), # remove x-axis labels
+        axis.title.y = element_text(size=22, face = "bold"),
+        legend.title = element_text(size = 15, face = "bold"),
+        legend.text = element_text(size = 12, face = "bold"),
+        legend.position = "none") +
+  stat_ellipse(aes(x = MDS1, y = MDS2, color = Group)) +
+  annotate("text", x = -1.86, y = 2.5, size = 7, label = "2D stress: 0.1060",
+           fontface = "bold") + 
+  annotate("text", x = -1.6, y = 2.3, size = 7, label = "PERMANOVA: P = 0.001",
+           fontface = "bold") +
+  annotate("text", x = 1.7, y = 0.85, size = 7, label = "ATS",
+           fontface = "bold", color = "dodgerblue") + 
+  annotate("text", x = 0.4, y = 1.4, size = 7, label = "BR",
+           fontface = "bold", color = "forestgreen") +
+  annotate("text", x = -0.7, y = 1.3, size = 7, label = "AB",
+           fontface = "bold", color = "gold") + 
+  annotate("text", x = -1.6, y = 0, size = 7, label = "Control",
+           fontface = "bold", color = "firebrick") +
+  scale_colour_manual(values = alpha(c("dodgerblue", "forestgreen", "gold", "firebrick"), 0.9))
+
+################################################
+# Read Counts #
+################################################
+
+read_counts <- read.csv("Reads.csv", header = TRUE)
+
+total_reads <- read_counts %>%
+  summarize(sum(Read.Counts)) # 586769
+
+avg_reads <- read_counts %>%
+  summarize(mean(Read.Counts)) # 39118
+
+avg_reads_by_group <- read_counts %>%
+  group_by(Group) %>%
+  summarize(mean(Read.Counts))
+
+read_counts
+total_reads
+avg_reads
+avg_reads_by_group
+
+################################################
+# Goods Coverage #
+################################################
+
+goods_coverage <- read.csv("goods_coverage.csv", header = TRUE)
